@@ -1,6 +1,6 @@
 {
   "/page": "app/page.js",
-  "/redeem/page": "app/redeem/page.js",
   "/account/page": "app/account/page.js",
-  "/library/page": "app/library/page.js"
+  "/library/page": "app/library/page.js",
+  "/redeem/page": "app/redeem/page.js"
 }
