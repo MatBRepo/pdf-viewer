@@ -14,8 +14,11 @@ import {
 type Status = "idle" | "loading" | "ok" | "error";
 
 function normalizeCode(raw: string) {
-  return String(raw).replace(/[\s\-–—]/g, "").replace(/[^A-Za-z0-9._]/g, "");
+  return String(raw)
+    .replace(/[\s\u00AD\u200B\u2060\uFEFF\u00B7\u2022\u2013\u2014]+/g, "") // strip hidden junk & exotic dashes
+    .replace(/[^A-Za-z0-9._-]/g, "");                                     // allow '-' and '_'
 }
+
 
 // for display you MAY uppercase (visual), but DO NOT submit the uppercased value
 function prettyCodeForDisplay(raw: string) {
