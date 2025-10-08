@@ -17,6 +17,14 @@ function normalizeCode(raw: string) {
   return String(raw).replace(/[\s\-–—]/g, "").replace(/[^A-Za-z0-9._]/g, "");
 }
 
+// for display you MAY uppercase (visual), but DO NOT submit the uppercased value
+function prettyCodeForDisplay(raw: string) {
+  const cleaned = normalizeCode(raw).toUpperCase(); // visual only
+  const parts = cleaned.split(".");
+  const chunk  = (s: string) => (s.match(/.{1,6}/g) || []).join("-");
+  return parts.length === 2 ? `${chunk(parts[0])}.${chunk(parts[1])}` : chunk(cleaned);
+}
+
 export default function AccountPage() {
   const supabase = createClient();
   const [email, setEmail] = useState<string | null>(null);

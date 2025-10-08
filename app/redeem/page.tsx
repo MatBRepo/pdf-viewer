@@ -13,33 +13,50 @@ import {
   Shield,
   BookOpen,
   Sparkles,
+  UserRound,
+  LogIn,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 type Status = "idle" | "loading" | "ok" | "error";
 
+/** Keep base64url + dot; drop spaces/dashes users paste from email (DO NOT change case) */
 function normalizeCode(raw: string) {
-  // keep base64url + dot; drop spaces and dashes users paste from email
-  return raw.replace(/[\s\-–—]/g, "").replace(/[^A-Za-z0-9._]/g, "").toUpperCase();
+  return String(raw).replace(/[\s\-–—]/g, "").replace(/[^A-Za-z0-9._]/g, "");
 }
 
-function prettyCode(raw: string) {
-  const cleaned = normalizeCode(raw);
-  const chunks = (s: string) => (s.match(/.{1,6}/g) || []).join("-");
+/** Pretty visual only (safe to uppercase for display), never submit this value */
+function prettyCodeForDisplay(raw: string) {
+  const cleaned = normalizeCode(raw).toUpperCase();
+  const chunk = (s: string) => (s.match(/.{1,6}/g) || []).join("-");
   const parts = cleaned.split(".");
-  return parts.length === 2 ? `${chunks(parts[0])}.${chunks(parts[1])}` : chunks(cleaned);
+  return parts.length === 2 ? `${chunk(parts[0])}.${chunk(parts[1])}` : chunk(cleaned);
 }
 
 export default function RedeemPage() {
+  const supabase = createClient();
   const [codeInput, setCodeInput] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [msg, setMsg] = useState("");
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [autoFilled, setAutoFilled] = useState(false);
 
-  const displayCode = useMemo(() => prettyCode(codeInput), [codeInput]);
+  const displayCode = useMemo(() => prettyCodeForDisplay(codeInput), [codeInput]);
 
   useEffect(() => {
+    // Pre-fill from ?code=...
     const url = new URL(window.location.href);
     const q = url.searchParams.get("code");
-    if (q) setCodeInput(q);
+    if (q) {
+      setCodeInput(q);
+      setAutoFilled(true);
+    }
+    // Read current logged-in user (for helpful banner)
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserEmail(user?.email ?? null);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function pasteFromClipboard() {
@@ -47,13 +64,13 @@ export default function RedeemPage() {
       const t = await navigator.clipboard.readText();
       if (t) setCodeInput(t);
     } catch {
-      // ignore (browser permission)
+      // ignore (permissions)
     }
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const payloadCode = normalizeCode(codeInput); // send normalized
+    const payloadCode = normalizeCode(codeInput); // send normalized (case-preserving)
     if (!payloadCode) return;
 
     setStatus("loading");
@@ -69,6 +86,7 @@ export default function RedeemPage() {
       setStatus("ok");
       setMsg(`Linked source: ${data?.source_label || "added"}.`);
       setCodeInput("");
+      setAutoFilled(false);
     } catch (err: any) {
       setStatus("error");
       setMsg(err?.message || "Something went wrong.");
@@ -77,10 +95,10 @@ export default function RedeemPage() {
 
   return (
     <main className="container py-10">
-      {/* Hero / header */}
+      {/* Hero */}
       <section className="rounded-2xl border bg-gradient-to-br from-white to-slate-50 p-6 md:p-8">
         <div className="flex items-start gap-4">
-          <div className="rounded-2xl bg-brand/10 p-3 text-brand">
+          <div className="rounded-2xl bg-indigo-600/10 p-3 text-indigo-600">
             <KeyRound size={24} />
           </div>
           <div className="grow">
@@ -104,6 +122,26 @@ export default function RedeemPage() {
           </div>
         </div>
 
+        {/* Not signed-in hint */}
+        {!userEmail && (
+          <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+            <UserRound className="mt-0.5" size={20} />
+            <div>
+              <div className="font-medium">You’re not signed in</div>
+              <p className="text-sm">
+                Redeeming links your order to your account.{" "}
+                <button
+                  className="inline-flex items-center text-indigo-700 underline underline-offset-2 hover:text-indigo-800"
+                  onClick={() => (window.location.href = "/account")}
+                >
+                  <LogIn size={14} className="mr-1" /> Sign in first
+                </button>
+                , preferably with the same email you used for the purchase.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Form card */}
         <Card className="mt-6">
           <CardHeader>
@@ -111,7 +149,8 @@ export default function RedeemPage() {
               <div className="font-medium">Enter your access code</div>
               <div className="hidden sm:flex items-center text-slate-500 text-sm">
                 <Sparkles size={16} className="mr-1" />
-                Tip: If you opened from the email button, the code is auto-filled.
+                Tip: If you opened from the email button, the code is auto-filled
+                {autoFilled ? " ✓" : ""}.
               </div>
             </div>
           </CardHeader>
@@ -120,12 +159,11 @@ export default function RedeemPage() {
               <Input
                 inputMode="text"
                 spellCheck={false}
-                autoCapitalize="characters"
+                autoCapitalize="off"
                 placeholder="XXXXXX-XXXXXX-... (code from email)"
                 value={displayCode}
                 onChange={(e) => setCodeInput(e.target.value)}
-                onPaste={async (e) => {
-                  // paste-friendly: grab plaintext; browser will still fire onChange
+                onPaste={(e) => {
                   const text = e.clipboardData?.getData("text") || "";
                   if (text) {
                     e.preventDefault();
@@ -160,7 +198,7 @@ export default function RedeemPage() {
               </Button>
             </form>
 
-            {/* feedback */}
+            {/* Feedback */}
             {status === "ok" && (
               <div className="mt-4 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-green-800">
                 <CheckCircle2 className="mt-0.5" size={20} />
@@ -188,8 +226,8 @@ export default function RedeemPage() {
                     <summary className="cursor-pointer">Troubleshooting</summary>
                     <ul className="list-disc pl-5 mt-1 space-y-1">
                       <li>Make sure you’re signed in with the same email you used to purchase.</li>
-                      <li>Try pasting the code again (it’s OK if it contains hyphens).</li>
-                      <li>If the email link opened this page, the code should be auto-filled.</li>
+                      <li>Paste the code again (hyphens are fine; we normalize them).</li>
+                      <li>Open the link directly from the email so the code auto-fills.</li>
                     </ul>
                   </details>
                 </div>
@@ -200,8 +238,8 @@ export default function RedeemPage() {
 
         {/* Footer help */}
         <div className="mt-6 text-sm text-slate-600">
-          By redeeming, your order is linked to your account for secure, in-app viewing. Files are
-          streamed with short-lived tickets (no downloads).
+          By redeeming, your order is linked to your account for secure, in-app viewing.
+          Files are streamed with short-lived tickets (no downloads).
         </div>
       </section>
     </main>
