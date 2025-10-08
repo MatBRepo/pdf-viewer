@@ -4,20 +4,17 @@ import { createClient } from "@/lib/supabase/server";
 // Normalize and parse the issuer from the grouped code
 function parseIssuerFromCode(raw: string): string | null {
   try {
-    // 1) remove all grouping/separator chars users might paste (spaces, hyphens, en/em dash)
+    // strip common separators users see in emails / copy-paste
     const cleaned = String(raw).replace(/[\s\-–—]/g, "");
-    // 2) keep only base64url + '.' (signature separator)
+    // keep only base64url + dot
     const compact = cleaned.replace(/[^A-Za-z0-9._]/g, "");
     const [p] = compact.split(".");
     if (!p) return null;
-    // 3) decode payload (base64url)
     const b64 = p.replace(/-/g, "+").replace(/_/g, "/");
     const json = Buffer.from(b64, "base64").toString("utf8");
     const obj = JSON.parse(json);
     return typeof obj?.iss === "string" ? obj.iss : null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 export async function POST(req: NextRequest) {
