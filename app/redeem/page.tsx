@@ -22,7 +22,9 @@ type Status = "idle" | "loading" | "ok" | "error";
 
 /** Keep base64url + dot; drop spaces/dashes users paste from email (DO NOT change case) */
 function normalizeCode(raw: string) {
-  return String(raw).replace(/[\s\-–—]/g, "").replace(/[^A-Za-z0-9._]/g, "");
+  return String(raw)
+    .replace(/[\s\u00B7\u2022\u2013\u2014]+/g, "")  // remove spaces, middle dot, bullet, en/em dash
+    .replace(/[^A-Za-z0-9._-]/g, "");              // allow '-'
 }
 
 /** Pretty visual only (safe to uppercase for display), never submit this value */
