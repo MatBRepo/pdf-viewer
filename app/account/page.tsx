@@ -29,7 +29,12 @@ export default function AccountPage() {
     e.preventDefault();
     setBusy(true);
     const emailInput = (document.getElementById("loginEmail") as HTMLInputElement).value;
-    const { error } = await supabase.auth.signInWithOtp({ email: emailInput, options: { emailRedirectTo: window.location.origin } });
+    const { error } = await supabase.auth.signInWithOtp({
+  email: emailInput,
+  options: {
+    emailRedirectTo: `${window.location.origin}/auth/callback`, // ⬅️ important
+  },
+});
     setBusy(false);
     if (error) alert(error.message); else alert("Check your inbox for a login link.");
   }
