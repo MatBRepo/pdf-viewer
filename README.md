@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Entriso PDF Viewer — Pro UI + Accounts + PWA Push
 
 End-to-end app for your flow:
@@ -76,3 +77,7 @@ create policy "del" on public.push_subscriptions for delete using (auth.uid() = 
 - `/account` — login, add code, manage push
 - `/viewer/[ticket]` — reader with modes
 - `/api/*` — redeem/list/ticket/pdf proxy + push subscribe/test
+=======
+# pdf-viewer
+So simple pdf viewer
+>>>>>>> cfc36e19ebf3090690c11a671f9570a195f8e08d
