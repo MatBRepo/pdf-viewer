@@ -1,7 +1,6 @@
 {
-  "/api/sources/route": "app/api/sources/route.js",
-  "/page": "app/page.js",
   "/account/page": "app/account/page.js",
+  "/library/page": "app/library/page.js",
   "/redeem/page": "app/redeem/page.js",
-  "/library/page": "app/library/page.js"
+  "/page": "app/page.js"
 }
