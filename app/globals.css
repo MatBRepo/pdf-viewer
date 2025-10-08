@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+
+html, body { height: 100%; }
+body { @apply bg-white text-slate-900; }
+
+.container { @apply mx-auto max-w-[1100px] px-4; }
+
+@supports (-webkit-touch-callout: none) { body { min-height: -webkit-fill-available; } }
+
+/* Prevent simple print */
+@media print { body { display: none !important; } }
