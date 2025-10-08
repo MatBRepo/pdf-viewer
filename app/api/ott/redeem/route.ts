@@ -1,22 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Remove only whitespace / exotic separators; KEEP '-' and '_'
-function cleanCode(raw: string) {
-  return String(raw).replace(/[\s\u00B7\u2022\u2013\u2014]+/g, "");
+// Remove whitespace + common hidden/linewrap chars (keep '-' and '_')
+function stripVisualJunk(s: string) {
+  // \u00AD soft hyphen, \u200B ZERO WIDTH SPACE, \u2060 WORD JOINER, \uFEFF BOM
+  // \u00B7 middle dot, \u2022 bullet, \u2013 en dash, \u2014 em dash
+  return s.replace(/[\s\u00AD\u200B\u2060\uFEFF\u00B7\u2022\u2013\u2014]+/g, "");
 }
 
-function parseIssuerFromCode(raw: string): string | null {
+function parseIssuer(compact: string): string | null {
   try {
-    const cleaned = cleanCode(raw);
-    const compact = cleaned.replace(/[^A-Za-z0-9._-]/g, ""); // allow '-' and '_'
     const [p] = compact.split(".");
     if (!p) return null;
-    const b64 = p.replace(/-/g, "+").replace(/_/g, "/");
-    const json = Buffer.from(b64, "base64").toString("utf8");
+    const json = Buffer.from(p.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
     const obj = JSON.parse(json);
-    return typeof obj?.iss === "string" ? obj.iss : null;
+    const iss = obj?.iss;
+    return typeof iss === "string" ? iss : null;
   } catch { return null; }
+}
+
+function normalizeCandidates(raw: string) {
+  const base = stripVisualJunk(String(raw));
+  const keepHyphens = base.replace(/[^A-Za-z0-9._-]/g, "");
+  const dropHyphens = base.replace(/-/g, "").replace(/[^A-Za-z0-9._]/g, "");
+  return [keepHyphens, dropHyphens];
 }
 
 export async function POST(req: NextRequest) {
@@ -25,8 +32,14 @@ export async function POST(req: NextRequest) {
     const raw = String(body?.code || "");
     if (!raw) return NextResponse.json({ error: "Code required" }, { status: 400 });
 
-    const code = cleanCode(raw); // DO NOT strip '-' or change case
-    const iss  = parseIssuerFromCode(code);
+    // Try with hyphens first; if we can't parse issuer, try without hyphens
+    const [candidateA, candidateB] = normalizeCandidates(raw);
+    let code = candidateA;
+    let iss = parseIssuer(candidateA);
+    if (!iss) {
+      iss = parseIssuer(candidateB);
+      if (iss) code = candidateB;
+    }
     if (!iss) return NextResponse.json({ error: "Cannot read issuer from code" }, { status: 400 });
 
     // Call WordPress to redeem
@@ -38,10 +51,10 @@ export async function POST(req: NextRequest) {
 
     const text = await r.text();
     let dj: any = null;
-    try { dj = JSON.parse(text); } catch { /* not JSON */ }
+    try { dj = JSON.parse(text); } catch {}
 
     if (!r.ok) {
-      // Surface WP error so you see the real reason (bad_sig, expired, etc.)
+      // Surface WP error so you see exactly why it failed
       return NextResponse.json(
         { error: dj?.message || text || "Redeem failed", statusFromWP: r.status },
         { status: r.status }
