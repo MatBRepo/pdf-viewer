@@ -55,18 +55,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <style>{`
           :root{
             --loader-color:#4f46e5;
-            --loader-draw:3.6s;
-            --loader-breathe:2.8s;
-            --loader-tilt:7deg;
+            --loader-draw:3.4s;      /* a touch quicker but still calm */
+            --loader-breathe:3.0s;   /* gentle loop */
+            --loader-tilt:6deg;
           }
           @media (max-width:480px){
-            :root{ --loader-draw:4.2s; --loader-breathe:3.2s; }
+            :root{ --loader-draw:3.8s; --loader-breathe:3.2s; }
           }
 
           html,body{height:100%}
           body{margin:0}
 
-          /* -------- First-load overlay (minimal) -------- */
+          /* -------- First-load overlay (clean & professional) -------- */
           .app-loader{
             position:fixed; inset:0; z-index:9999; display:grid; place-items:center;
             background:transparent; transition:opacity .45s ease;
@@ -76,46 +76,105 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           [data-ready="1"] .app-loader{opacity:0; pointer-events:none}
           .app-loader[data-hidden]{display:none}
 
-          .app-loader__box{display:flex; flex-direction:column; align-items:center; text-align:center; gap:clamp(8px,2.6vw,16px);}
-          .app-loader__svg{width:clamp(64px,18vw,160px); height:clamp(64px,18vw,160px); position:relative;}
-          .app-loader__svg::before{
-            content:""; position:absolute; inset:-16%; border-radius:999px; filter:blur(18px);
-            background:radial-gradient(closest-side, color-mix(in oklab, var(--loader-color) 55%, transparent), transparent 70%);
-            opacity:.22; pointer-events:none;
+          .app-loader__box{
+            display:flex; flex-direction:column; align-items:center; text-align:center;
+            gap:12px; min-width:200px;
           }
-          .app-loader__title{font-weight:600; font-size:clamp(14px,2vw,18px); line-height:1.3; letter-spacing:.2px;}
 
-          .book-icon{transform-style:preserve-3d; animation:bookbreathe var(--loader-breathe) ease-in-out calc(var(--loader-draw)+.5s) infinite, booktilt var(--loader-breathe) ease-in-out calc(var(--loader-draw)+.5s) infinite;}
-          .book-path{stroke:currentColor; stroke-width:.5; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:240; stroke-dashoffset:240; animation:bookdraw var(--loader-draw) ease-out forwards;}
-          @keyframes bookdraw{to{stroke-dashoffset:0}}
-          @keyframes bookbreathe{0%{transform:translateY(0) scale(1); opacity:1} 50%{transform:translateY(-2px) scale(1.018); opacity:.96} 100%{transform:translateY(0) scale(1); opacity:1}}
-          @keyframes booktilt{0%{transform:rotateX(0) rotateY(0)} 50%{transform:rotateX(.7deg) rotateY(calc(var(--loader-tilt)*-0.1))} 100%{transform:rotateX(0) rotateY(0)}}
+          /* Smaller, tidy icon */
+          .app-loader__svg{
+            width: clamp(44px, 12vw, 84px);
+            height: clamp(44px, 12vw, 84px);
+            position: relative;
+          }
+          /* very subtle halo */
+          .app-loader__svg::before{
+            content:""; position:absolute; inset:-18%;
+            border-radius:999px; filter:blur(14px);
+            background: radial-gradient(closest-side, color-mix(in oklab, var(--loader-color) 40%, transparent), transparent 70%);
+            opacity:.16; pointer-events:none;
+          }
 
-          /* Blur app under loader */
-          .app-root{transition:filter .45s ease, transform .45s ease;}
-          body:not([data-ready="1"]) .app-root{filter:blur(10px) saturate(.95) brightness(.98); transform:scale(.992); pointer-events:none;}
+          .app-loader__title{
+            font-weight:600; font-size:14px; line-height:1.25; letter-spacing:.2px; color:#0f172a;
+          }
+          .app-loader__caption{
+            font-size:12px; color:#475569;
+          }
+
+          /* Book stroke animation (thin & crisp) */
+          .book-icon{
+            transform-style:preserve-3d;
+            animation:
+              bookbreathe var(--loader-breathe) ease-in-out calc(var(--loader-draw) + .4s) infinite,
+              booktilt var(--loader-breathe) ease-in-out calc(var(--loader-draw) + .4s) infinite;
+          }
+          .book-path{
+            stroke: currentColor; stroke-width: .5;
+            fill: none; stroke-linecap: round; stroke-linejoin: round;
+            stroke-dasharray: 240; stroke-dashoffset: 240;
+            animation: bookdraw var(--loader-draw) ease-out forwards;
+          }
+          @keyframes bookdraw { to { stroke-dashoffset: 0; } }
+          @keyframes bookbreathe {
+            0%   { transform: translateY(0)    scale(1);     opacity:1 }
+            50%  { transform: translateY(-1.5px) scale(1.012); opacity:.98 }
+            100% { transform: translateY(0)    scale(1);     opacity:1 }
+          }
+          @keyframes booktilt {
+            0%   { transform: rotateX(0) rotateY(0) }
+            50%  { transform: rotateX(.5deg) rotateY(calc(var(--loader-tilt) * -0.1)) }
+            100% { transform: rotateX(0) rotateY(0) }
+          }
+
+          /* Professional progress bar */
+          .app-loader__bar{
+            width:min(280px, 70vw); height:3px; border-radius:999px;
+            background: color-mix(in oklab, var(--loader-color) 18%, transparent);
+            overflow:hidden; position:relative; margin-top:2px;
+          }
+          .app-loader__bar::after{
+            content:""; position:absolute; inset:0; width:42%;
+            background: linear-gradient(90deg, transparent, var(--loader-color), transparent);
+            transform:translateX(-100%); border-radius:inherit; opacity:.9;
+            animation: loaderbar 1.6s ease-in-out .2s infinite;
+          }
+          @keyframes loaderbar{
+            0%{ transform:translateX(-100%) }
+            55%{ transform:translateX(160%) }
+            100%{ transform:translateX(160%) }
+          }
+
+          /* Blur app under loader once */
+          .app-root{ transition:filter .45s ease, transform .45s ease }
+          body:not([data-ready="1"]) .app-root{
+            filter: blur(10px) saturate(.95) brightness(.98);
+            transform: scale(.992);
+            pointer-events: none;
+          }
 
           /* -------- Route enter animation (no overlay) -------- */
-          .rt{will-change:opacity,transform,filter;}
-          .rt-enter{animation:rtFadeLift .34s ease both;}
+          .rt{ will-change: opacity, transform, filter }
+          .rt-enter{ animation: rtFadeLift .34s ease both }
           @keyframes rtFadeLift{
-            0%{opacity:0; transform:translateY(8px) scale(.995); filter:saturate(.98)}
-            100%{opacity:1; transform:translateY(0) scale(1); filter:none}
+            0%   { opacity:0; transform: translateY(8px) scale(.995); filter: saturate(.98) }
+            100% { opacity:1; transform: translateY(0)   scale(1);    filter: none }
           }
 
           @media (prefers-reduced-motion:reduce){
-            .app-root{transition:none}
-            .rt-enter{animation:none}
-            .book-icon{animation:none}
-            .book-path{animation:none; stroke-dashoffset:0}
-            .app-loader__svg::before{display:none}
+            .app-root{ transition:none }
+            .rt-enter{ animation:none }
+            .book-icon{ animation:none }
+            .book-path{ animation:none; stroke-dashoffset:0 }
+            .app-loader__svg::before{ display:none }
+            .app-loader__bar::after{ animation:none; transform:none; background: var(--loader-color) }
           }
         `}</style>
       </head>
       <body>
         {/* First-load only */}
         <div className="app-loader" aria-hidden data-hidden>
-          <div className="app-loader__box">
+          <div className="app-loader__box" role="status" aria-live="polite" aria-label="Ładowanie aplikacji">
             <svg className="app-loader__svg" viewBox="0 0 24 24" fill="none" aria-hidden>
               <g className="book-icon">
                 <path
@@ -125,6 +184,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </g>
             </svg>
             <div className="app-loader__title">Ładowanie…</div>
+            <div className="app-loader__bar" />
+            <div className="app-loader__caption" aria-hidden>Proszę czekać</div>
           </div>
         </div>
 
