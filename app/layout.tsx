@@ -32,14 +32,12 @@ const firstLoadScript = `
   var body = document.body;
   var loader = null;
   function sel(){ loader = loader || document.querySelector('.app-loader'); }
-  // show loader immediately
   document.addEventListener('DOMContentLoaded', function(){ sel(); if (loader) loader.removeAttribute('data-hidden'); });
-  // hide after load (with a tiny grace for smoothness)
   window.addEventListener('load', function(){
     setTimeout(function(){
       body.setAttribute('data-ready','1');
-      setTimeout(function(){ sel(); if (loader) loader.setAttribute('data-hidden',''); }, 350);
-    }, 200);
+      setTimeout(function(){ sel(); if (loader) loader.setAttribute('data-hidden',''); }, 380);
+    }, 280); // small grace for a calm finish
   });
 })();`;
 
@@ -52,38 +50,71 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <style>{`
+          :root{
+            /* tune once, used everywhere */
+            --loader-draw: 2.8s;          /* slower draw */
+            --loader-breathe: 2.4s;       /* gentle loop */
+            --loader-tilt: 8deg;          /* micro 3D tilt */
+            --brand: #111;                /* loader color; change to #4f46e5 if you prefer brand */
+          }
+          @media (max-width: 480px){
+            :root{ --loader-draw: 3.4s; --loader-breathe: 2.8s; } /* even calmer on small screens */
+          }
+
           html,body{height:100%}
           body{margin:0}
 
-          /* -------- Minimal first-load overlay -------- */
+          /* ------- Minimal first-load overlay (responsive) ------- */
           .app-loader{
             position:fixed; inset:0; z-index:9999; display:grid; place-items:center;
-            background:transparent; transition:opacity .35s ease; color:#111;
+            background:transparent; transition:opacity .4s ease; color:var(--brand);
+            padding: max(env(safe-area-inset-top), 16px) 16px max(env(safe-area-inset-bottom), 16px);
           }
           [data-ready="1"] .app-loader{opacity:0; pointer-events:none}
           .app-loader[data-hidden]{display:none}
 
-          .app-loader__box{display:flex; flex-direction:column; align-items:center; gap:10px}
-          .app-loader__svg{width:96px; height:96px}
+          .app-loader__box{
+            display:flex; flex-direction:column; align-items:center; text-align:center;
+            gap: clamp(8px, 2.5vw, 14px);
+          }
+          .app-loader__svg{
+            width: clamp(64px, 14vw, 140px);
+            height: clamp(64px, 14vw, 140px);
+          }
           .app-loader__title{
-            font:600 15px/1.3 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;
-            letter-spacing:.2px; color:currentColor;
+            font-weight: 600;
+            font-size: clamp(14px, 1.8vw, 18px);
+            line-height: 1.3;
+            letter-spacing:.2px;
+            color: currentColor;
           }
 
-          /* Book path: thin + draw once, then breathe loop */
-          .book-icon{ animation:bookbreathe 2s ease-in-out 2s infinite; }
+          /* Book: thin path that draws slowly, then subtle breathe + micro 3D tilt */
+          .book-icon{
+            animation:
+              bookbreathe var(--loader-breathe) ease-in-out calc(var(--loader-draw) + .4s) infinite,
+              booktilt var(--loader-breathe) ease-in-out calc(var(--loader-draw) + .4s) infinite;
+            transform-style: preserve-3d;
+          }
           .book-path{
-            stroke:currentColor; stroke-width:.5; fill:none; stroke-linecap:round; stroke-linejoin:round;
-            stroke-dasharray:240; stroke-dashoffset:240; animation:bookdraw 1.6s ease-out forwards;
+            stroke: currentColor; stroke-width: .5;
+            fill: none; stroke-linecap: round; stroke-linejoin: round;
+            stroke-dasharray: 240; stroke-dashoffset: 240;
+            animation: bookdraw var(--loader-draw) ease-out forwards;
           }
-          @keyframes bookdraw { to { stroke-dashoffset:0 } }
+          @keyframes bookdraw { to { stroke-dashoffset: 0; } }
           @keyframes bookbreathe {
-            0% { transform: translateY(0) scale(1); opacity:1 }
-            50%{ transform: translateY(-2px) scale(1.02); opacity:.95 }
-            100%{ transform: translateY(0) scale(1); opacity:1 }
+            0%   { transform: translateY(0)    scale(1);     opacity:1 }
+            50%  { transform: translateY(-2px) scale(1.015); opacity:.96 }
+            100% { transform: translateY(0)    scale(1);     opacity:1 }
+          }
+          @keyframes booktilt {
+            0%   { transform: rotateX(0) rotateY(0) }
+            50%  { transform: rotateX(0.6deg) rotateY(calc(var(--loader-tilt) * -0.08)) }
+            100% { transform: rotateX(0) rotateY(0) }
           }
 
-          /* -------- Blur the app under loader -------- */
+          /* Blur the app underneath while loader is visible */
           .app-root{ transition: filter .35s ease, transform .35s ease }
           body:not([data-ready="1"]) .app-root{
             filter: blur(8px) saturate(.95) brightness(.98);
@@ -91,9 +122,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             pointer-events: none;
           }
 
-          /* -------- Smooth route transitions (no overlay) -------- */
+          /* ------- Smooth route transitions (no overlay) ------- */
           .rt { will-change: opacity, transform, filter; }
-          .rt-enter { animation: rtFadeLift .28s ease both; }
+          .rt-enter { animation: rtFadeLift .32s ease both; }
           @keyframes rtFadeLift {
             0%   { opacity:0; transform: translateY(8px) scale(.995); filter: saturate(.98); }
             100% { opacity:1; transform: translateY(0)   scale(1);    filter: none; }
@@ -123,7 +154,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        {/* App content (blurred while loading) */}
+        {/* App content (blurred until ready) */}
         <div className="app-root">
           <RouteTransition>
             <NavBar />
