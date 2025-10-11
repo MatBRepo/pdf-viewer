@@ -2,6 +2,8 @@ import "./globals.css";
 import TopHeader from "@/components/TopHeader";
 import MobileTabBar from "@/components/MobileTabBar";
 import RouteTransition from "@/components/RouteTransition";
+import { InstallProvider } from "@/components/install/InstallProvider";
+import InstallPushup from "@/components/install/InstallPushup";
 
 export const metadata = {
   title: "Entriso PDF Viewer",
@@ -127,13 +129,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         {/* App content (blurred until ready) */}
-        <div className="app-root">
-          <TopHeader />
-          <RouteTransition>{children}</RouteTransition>
-        </div>
+        <InstallProvider>
+          <div className="app-root">
+            <TopHeader />
+            <RouteTransition>{children}</RouteTransition>
+          </div>
 
-        {/* Mobile bottom tabs (portaled; truly fixed over everything) */}
-        <MobileTabBar />
+          {/* Mobile bottom tabs (portaled; truly fixed) */}
+          <MobileTabBar />
+
+          {/* First-visit push-up to trigger native install (Android/Chrome) */}
+          <InstallPushup />
+        </InstallProvider>
 
         <script dangerouslySetInnerHTML={{ __html: firstLoadScript }} />
         <script dangerouslySetInnerHTML={{ __html: swRegisterScript }} />
