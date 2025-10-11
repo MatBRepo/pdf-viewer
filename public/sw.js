@@ -1,57 +1,57 @@
-// SW: cache app shell; NO PDF caching; handle Web Push
-const CACHE = "entriso-shell-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest"];
+const CACHE = "entriso-v1";
+const APP_SHELL = ["/", "/manifest.webmanifest", "/favicon.ico", "/icons/icon-192.png", "/icons/icon-512.png"];
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
+self.addEventListener("install", (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
 
-self.addEventListener("activate", (event) => { event.waitUntil(self.clients.claim()); });
-
-self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-  const isPdfLike = url.pathname.endsWith(".pdf") || url.pathname.startsWith("/api/pdf/");
-  if (isPdfLike) return; // do NOT intercept PDF streams
-  if (event.request.method !== "GET") return;
-  event.respondWith((async () => {
-    const cached = await caches.match(event.request);
-    if (cached) return cached;
-    try {
-      const res = await fetch(event.request);
-      const cache = await caches.open(CACHE);
-      const ct = res.headers.get("content-type") || "";
-      if (res.ok && res.type === "basic" && (ct.includes("text/") || ct.includes("application/javascript"))) {
-        cache.put(event.request, res.clone());
-      }
-      return res;
-    } catch (e) {
-      if (url.pathname === "/") return caches.match("/");
-      throw e;
-    }
-  })());
-});
-
-// ---- Web Push ----
-self.addEventListener("push", (event) => {
-  let data = {};
-  try { data = event.data ? event.data.json() : {}; } catch(e) {}
-  const title = data.title || "Entriso";
-  const body = data.body || "New update";
-  const url = data.url || "/";
-  const tag = data.tag || "entriso";
-  const icon = "/icons/icon-192.png";
-  event.waitUntil(
-    self.registration.showNotification(title, { body, tag, icon, data: { url } })
+self.addEventListener("activate", (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/";
-  event.waitUntil(clients.matchAll({ type: "window" }).then(windowClients => {
-    for (const client of windowClients) {
-      if ("focus" in client) { client.navigate(url); return client.focus(); }
-    }
-    if (clients.openWindow) return clients.openWindow(url);
-  }));
+function shouldBypass(req) {
+  const url = new URL(req.url);
+  return (
+    req.headers.get("accept")?.includes("application/pdf") ||
+    url.pathname.endsWith(".pdf") ||
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/viewer/stream")
+  );
+}
+
+self.addEventListener("fetch", (e) => {
+  const req = e.request;
+  const url = new URL(req.url);
+
+  if (shouldBypass(req)) return;
+
+  // App navigation: network-first, fallback to cache
+  if (req.mode === "navigate") {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req).then((m) => m || caches.match("/")))
+    );
+    return;
+  }
+
+  // Static assets (Next chunks, icons, CSS/JS) → cache-first
+  if (
+    url.origin === self.location.origin &&
+    (url.pathname.startsWith("/_next/") || url.pathname.startsWith("/icons/") || url.pathname.endsWith(".css") || url.pathname.endsWith(".js"))
+  ) {
+    e.respondWith(
+      caches.match(req).then((cached) => cached || fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy));
+        return res;
+      }))
+    );
+  }
 });

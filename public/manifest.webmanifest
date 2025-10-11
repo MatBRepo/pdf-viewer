@@ -1,26 +1,21 @@
 {
   "name": "Entriso PDF Viewer",
-  "short_name": "Entriso PDFs",
-  "start_url": "/",
+  "short_name": "Entriso",
+  "description": "Bezpieczny podgląd zakupionych PDF-ów.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#111827",
+  "background_color": "#ffffff",
   "theme_color": "#4f46e5",
   "icons": [
-    {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable any"
-    }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Wykorzystaj kod", "short_name": "Kod", "url": "/redeem" },
+    { "name": "Biblioteka", "short_name": "Biblioteka", "url": "/library" },
+    { "name": "Konto", "short_name": "Konto", "url": "/account" }
   ]
 }

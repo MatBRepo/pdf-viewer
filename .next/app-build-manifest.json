@@ -40,6 +40,21 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/ott/redeem/route.js"
+    ],
+    "/api/sources/[id]/ticket/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/sources/[id]/ticket/route.js"
+    ],
+    "/viewer/[ticket]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/viewer/[ticket]/page.js"
+    ],
+    "/api/pdf/[ticket]/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/pdf/[ticket]/route.js"
     ]
   }
 }

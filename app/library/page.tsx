@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -23,23 +23,70 @@ import {
   Loader2,
   RefreshCcw,
   Search,
+  CalendarDays,
+  Hash,
+  Globe,
+  Link2,
+  FileText,
 } from "lucide-react";
 
 // Types
-type Source = { id: string; source_label: string; wp_base_url: string; created_at: string };
+type Source = {
+  id: string;
+  source_label: string;
+  wp_base_url: string;
+  created_at: string;
+};
 type FileItem = {
   download_id: string;
-  name: string;
+  name: string | null;
   product_id: number;
   downloads_remaining: string | null;
   access_expires: string | null;
 };
 
+// ------- Helpers -------
+function safeLower(v: unknown) {
+  return (v ?? "").toString().toLowerCase();
+}
+function domainOf(url: string): string {
+  try {
+    const u = new URL(url);
+    return u.hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+function faviconOf(url: string): string | null {
+  try {
+    const u = new URL(url);
+    return `${u.origin}/favicon.ico`;
+  } catch {
+    return null;
+  }
+}
+function productUrl(base: string, productId: number): string | null {
+  // Generic WP fallback for product preview:
+  // many Woo sites support query to product by ID via ?post_type=product&p=
+  try {
+    const u = new URL(base);
+    u.searchParams.set("post_type", "product");
+    u.searchParams.set("p", String(productId));
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
 export default function LibraryPage() {
   const router = useRouter();
   const [sources, setSources] = useState<Source[]>([]);
-  const [filesBySource, setFilesBySource] = useState<Record<string, FileItem[]>>({});
-  const [openSourceIds, setOpenSourceIds] = useState<Record<string, boolean>>({});
+  const [filesBySource, setFilesBySource] = useState<Record<string, FileItem[]>>(
+    {}
+  );
+  const [openSourceIds, setOpenSourceIds] = useState<Record<string, boolean>>(
+    {}
+  );
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState<Record<string, boolean>>({});
   const [openingKey, setOpeningKey] = useState<string | null>(null);
@@ -74,7 +121,6 @@ export default function LibraryPage() {
   }
 
   function toggleSource(id: string) {
-    // If we have files already, just toggle. Otherwise fetch.
     if (filesBySource[id]) {
       setOpenSourceIds((m) => ({ ...m, [id]: !m[id] }));
     } else {
@@ -130,7 +176,11 @@ export default function LibraryPage() {
           onClick={loadSources}
           disabled={loading}
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCcw className="h-4 w-4" />
+          )}
           Odśwież
         </Button>
         <Button asChild>
@@ -148,7 +198,11 @@ export default function LibraryPage() {
           className="mt-6 rounded-2xl border p-6"
         >
           <p className="text-slate-600">
-            Brak źródeł. Dodaj je na stronie <a href="/redeem" className="underline">Wykorzystaj</a>.
+            Brak źródeł. Dodaj je na stronie{" "}
+            <a href="/redeem" className="underline">
+              Wykorzystaj
+            </a>
+            .
           </p>
         </motion.div>
       )}
@@ -164,12 +218,12 @@ export default function LibraryPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {Array.from({ length: 6 }).map((_, j) => (
                     <div key={j} className="rounded-2xl border p-3">
                       <Skeleton className="h-4 w-48" />
-                      <Skeleton className="h-3 w-24 mt-2" />
-                      <Skeleton className="h-9 w-24 mt-3" />
+                      <Skeleton className="mt-2 h-3 w-24" />
+                      <Skeleton className="mt-3 h-9 w-24" />
                     </div>
                   ))}
                 </div>
@@ -182,21 +236,52 @@ export default function LibraryPage() {
       <div className="mt-6 space-y-6">
         {sources.map((s) => {
           const items = filesBySource[s.id] || [];
-const term = (search[s.id] || "").toLowerCase();
-const filtered = items.filter((f) =>
-  f.name.toLowerCase().includes(term)
-);
+          const term = safeLower(search[s.id] || "");
+          const filtered = items.filter((f) =>
+            safeLower(f.name).includes(term)
+          );
+
+          const fav = faviconOf(s.wp_base_url);
+          const host = domainOf(s.wp_base_url);
 
           return (
             <Card key={s.id} className="overflow-hidden">
               <CardHeader>
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{s.source_label}</div>
-                    <div className="text-xs text-slate-500 truncate">{s.wp_base_url}</div>
+                  {/* Source logo + labels */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative grid h-8 w-8 place-items-center rounded-xl bg-slate-100 text-slate-600">
+                      {fav ? (
+                        // favicon with graceful fallback
+                        <img
+                          src={fav}
+                          alt=""
+                          width={20}
+                          height={20}
+                          className="h-5 w-5"
+                          loading="lazy"
+                          decoding="async"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display =
+                              "none";
+                          }}
+                        />
+                      ) : (
+                        <Globe className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">
+                        {s.source_label}
+                      </div>
+                      <div className="truncate text-xs text-slate-500">
+                        {host}
+                      </div>
+                    </div>
                   </div>
+
                   <div className="ml-auto flex items-center gap-2">
-                    <div className="hidden sm:flex items-center gap-2">
+                    <div className="hidden items-center gap-2 sm:flex">
                       <Badge variant="secondary" title="Data dodania">
                         {new Date(s.created_at).toLocaleDateString()}
                       </Badge>
@@ -214,10 +299,17 @@ const filtered = items.filter((f) =>
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <ChevronDown
-                          className={"h-4 w-4 transition-transform " + (openSourceIds[s.id] ? "rotate-180" : "")}
+                          className={
+                            "h-4 w-4 transition-transform " +
+                            (openSourceIds[s.id] ? "rotate-180" : "")
+                          }
                         />
                       )}
-                      {openSourceIds[s.id] ? "Ukryj pliki" : items.length ? "Pokaż pliki" : "Wczytaj pliki"}
+                      {openSourceIds[s.id]
+                        ? "Ukryj pliki"
+                        : items.length
+                        ? "Pokaż pliki"
+                        : "Wczytaj pliki"}
                     </Button>
                   </div>
                 </div>
@@ -231,7 +323,9 @@ const filtered = items.filter((f) =>
                         className="pl-8"
                         placeholder="Szukaj w tym źródle…"
                         value={search[s.id] || ""}
-                        onChange={(e) => setSearch((m) => ({ ...m, [s.id]: e.target.value }))}
+                        onChange={(e) =>
+                          setSearch((m) => ({ ...m, [s.id]: e.target.value }))
+                        }
                       />
                     </div>
                   </div>
@@ -247,45 +341,115 @@ const filtered = items.filter((f) =>
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {filtered.map((f) => {
-                          const opening = openingKey === `${s.id}:${f.download_id}`;
-                          const expires = f.access_expires ? new Date(f.access_expires) : null;
-                          const expiresLabel = expires ? expires.toLocaleDateString() : "Bez terminu";
-                          const remaining = f.downloads_remaining ?? "∞";
-                          return (
-                            <motion.div
-                              key={f.download_id}
-                              whileHover={{ y: -2 }}
-                              className="rounded-2xl border p-3 flex flex-col"
-                            >
-                              <div className="font-medium text-sm line-clamp-2" title={f.name}>{f.name}</div>
-                              <div className="flex flex-wrap items-center gap-2 mt-2">
-                                <Badge variant="outline" title="ID pliku">#{f.download_id}</Badge>
-                                <Badge variant="secondary" title="Wygasa">Wygasa: {expiresLabel}</Badge>
-                                <Badge variant="secondary" title="Pozostało pobrań">Pozostało: {remaining}</Badge>
-                              </div>
-                              <div className="mt-3 flex gap-2">
-                                <Button
-                                  className="inline-flex items-center gap-2"
-                                  onClick={() => openFile(s.id, f.download_id)}
-                                  disabled={opening}
-                                >
-                                  {opening ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                                  Otwórz
-                                </Button>
-                              </div>
-                            </motion.div>
-                          );
-                        })}
+                      {/* Per-source loading shimmer */}
+                      {loadingList[s.id] && items.length === 0 ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {Array.from({ length: 6 }).map((_, j) => (
+                            <div key={j} className="rounded-2xl border p-3">
+                              <Skeleton className="h-4 w-48" />
+                              <Skeleton className="mt-2 h-3 w-24" />
+                              <Skeleton className="mt-3 h-9 w-24" />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {filtered.map((f) => {
+                            const opening =
+                              openingKey === `${s.id}:${f.download_id}`;
+                            const expires = f.access_expires
+                              ? new Date(f.access_expires)
+                              : null;
+                            const expiresLabel = expires
+                              ? expires.toLocaleDateString()
+                              : "Bez terminu";
+                            const remaining = f.downloads_remaining ?? "∞";
+                            const prodLink = productUrl(
+                              s.wp_base_url,
+                              f.product_id
+                            );
 
-                        {/* No results after filtering */}
-                        {filtered.length === 0 && (
-                          <div className="rounded-2xl border p-4 text-sm text-slate-600">
-                            Brak wyników dla tego filtra.
-                          </div>
-                        )}
-                      </div>
+                            return (
+                              <motion.div
+                                key={f.download_id}
+                                whileHover={{ y: -2 }}
+                                className="flex flex-col rounded-2xl border p-3"
+                              >
+                                {/* Title row with file icon */}
+                                <div
+                                  className="line-clamp-2 flex items-start gap-2 text-sm font-medium"
+                                  title={f.name || "Plik"}
+                                >
+                                  <FileText className="mt-0.5 h-4 w-4 text-primary/80" />
+                                  <span>{f.name || "Bez nazwy"}</span>
+                                </div>
+
+                                {/* Meta badges */}
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                  <Badge variant="outline" title="ID pliku">
+                                    <Hash className="mr-1 h-3.5 w-3.5" />
+                                    {f.download_id}
+                                  </Badge>
+                                  <Badge variant="secondary" title="Wygasa">
+                                    <CalendarDays className="mr-1 h-3.5 w-3.5" />
+                                    Wygasa: {expiresLabel}
+                                  </Badge>
+                                  <Badge
+                                    variant="secondary"
+                                    title="Pozostałe pobrania"
+                                  >
+                                    Pozostało: {remaining}
+                                  </Badge>
+                                </div>
+
+                                {/* Source + product link */}
+                                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                                  <span className="inline-flex items-center gap-1">
+                                    <Globe className="h-3.5 w-3.5" />
+                                    {host}
+                                  </span>
+                                  {prodLink && (
+                                    <a
+                                      href={prodLink}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
+                                      title="Zobacz produkt w WordPress"
+                                    >
+                                      <Link2 className="h-3.5 w-3.5" />
+                                      Produkt #{f.product_id}
+                                    </a>
+                                  )}
+                                </div>
+
+                                <div className="mt-3 flex gap-2">
+                                  <Button
+                                    className="inline-flex items-center gap-2"
+                                    onClick={() =>
+                                      openFile(s.id, f.download_id)
+                                    }
+                                    disabled={opening}
+                                  >
+                                    {opening ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <ExternalLink className="h-4 w-4" />
+                                    )}
+                                    Otwórz
+                                  </Button>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+
+                          {/* No results after filtering */}
+                          {filtered.length === 0 && !loadingList[s.id] && (
+                            <div className="rounded-2xl border p-4 text-sm text-slate-600">
+                              Brak wyników dla tego filtra.
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
