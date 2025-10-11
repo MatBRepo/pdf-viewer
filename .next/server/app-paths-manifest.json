@@ -1,9 +1,7 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js",
   "/library/page": "app/library/page.js",
-  "/account/page": "app/account/page.js",
+  "/subscription/page": "app/subscription/page.js",
   "/redeem/page": "app/redeem/page.js",
   "/viewer/[ticket]/page": "app/viewer/[ticket]/page.js",
-  "/subscription/page": "app/subscription/page.js"
+  "/account/page": "app/account/page.js"
 }
