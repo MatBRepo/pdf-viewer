@@ -36,8 +36,8 @@ const firstLoadScript = `
   window.addEventListener('load', function(){
     setTimeout(function(){
       body.setAttribute('data-ready','1');
-      setTimeout(function(){ sel(); if (loader) loader.setAttribute('data-hidden',''); }, 380);
-    }, 280); // small grace for a calm finish
+      setTimeout(function(){ sel(); if (loader) loader.setAttribute('data-hidden',''); }, 420);
+    }, 300); // calmer finish
   });
 })();`;
 
@@ -51,50 +51,57 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="manifest" href="/manifest.webmanifest" />
         <style>{`
           :root{
-            /* tune once, used everywhere */
-            --loader-draw: 2.8s;          /* slower draw */
-            --loader-breathe: 2.4s;       /* gentle loop */
-            --loader-tilt: 8deg;          /* micro 3D tilt */
-            --brand: #111;                /* loader color; change to #4f46e5 if you prefer brand */
+            /* tune once */
+            --loader-color: #4f46e5;    /* set to your brand; or inherit currentColor */
+            --loader-draw: 3.6s;        /* slower drawing */
+            --loader-breathe: 2.8s;     /* gentle loop */
+            --loader-tilt: 7deg;        /* micro-tilt */
           }
           @media (max-width: 480px){
-            :root{ --loader-draw: 3.4s; --loader-breathe: 2.8s; } /* even calmer on small screens */
+            :root{ --loader-draw: 4.2s; --loader-breathe: 3.2s; } /* even calmer on phones */
           }
 
           html,body{height:100%}
           body{margin:0}
 
-          /* ------- Minimal first-load overlay (responsive) ------- */
+          /* ---------- Minimal first-load overlay ---------- */
           .app-loader{
             position:fixed; inset:0; z-index:9999; display:grid; place-items:center;
-            background:transparent; transition:opacity .4s ease; color:var(--brand);
+            background:transparent; transition:opacity .45s ease;
             padding: max(env(safe-area-inset-top), 16px) 16px max(env(safe-area-inset-bottom), 16px);
+            color: var(--loader-color);
           }
           [data-ready="1"] .app-loader{opacity:0; pointer-events:none}
           .app-loader[data-hidden]{display:none}
 
           .app-loader__box{
             display:flex; flex-direction:column; align-items:center; text-align:center;
-            gap: clamp(8px, 2.5vw, 14px);
+            gap: clamp(8px, 2.6vw, 16px);
           }
           .app-loader__svg{
-            width: clamp(64px, 14vw, 140px);
-            height: clamp(64px, 14vw, 140px);
+            width: clamp(64px, 18vw, 160px);
+            height: clamp(64px, 18vw, 160px);
+            position: relative;
+          }
+          /* Soft glow behind icon (no borders/gradients on overlay itself) */
+          .app-loader__svg::before{
+            content:""; position:absolute; inset:-16%;
+            border-radius:999px; filter: blur(18px);
+            background: radial-gradient(closest-side, color-mix(in oklab, var(--loader-color) 55%, transparent), transparent 70%);
+            opacity:.22; pointer-events:none;
           }
           .app-loader__title{
             font-weight: 600;
-            font-size: clamp(14px, 1.8vw, 18px);
-            line-height: 1.3;
-            letter-spacing:.2px;
-            color: currentColor;
+            font-size: clamp(14px, 2vw, 18px);
+            line-height: 1.3; letter-spacing:.2px; color: currentColor;
           }
 
-          /* Book: thin path that draws slowly, then subtle breathe + micro 3D tilt */
+          /* Book: thin path draws slowly, then breathe + micro 3D tilt */
           .book-icon{
-            animation:
-              bookbreathe var(--loader-breathe) ease-in-out calc(var(--loader-draw) + .4s) infinite,
-              booktilt var(--loader-breathe) ease-in-out calc(var(--loader-draw) + .4s) infinite;
             transform-style: preserve-3d;
+            animation:
+              bookbreathe var(--loader-breathe) ease-in-out calc(var(--loader-draw) + .5s) infinite,
+              booktilt var(--loader-breathe) ease-in-out calc(var(--loader-draw) + .5s) infinite;
           }
           .book-path{
             stroke: currentColor; stroke-width: .5;
@@ -105,26 +112,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           @keyframes bookdraw { to { stroke-dashoffset: 0; } }
           @keyframes bookbreathe {
             0%   { transform: translateY(0)    scale(1);     opacity:1 }
-            50%  { transform: translateY(-2px) scale(1.015); opacity:.96 }
+            50%  { transform: translateY(-2px) scale(1.018); opacity:.96 }
             100% { transform: translateY(0)    scale(1);     opacity:1 }
           }
           @keyframes booktilt {
             0%   { transform: rotateX(0) rotateY(0) }
-            50%  { transform: rotateX(0.6deg) rotateY(calc(var(--loader-tilt) * -0.08)) }
+            50%  { transform: rotateX(.7deg) rotateY(calc(var(--loader-tilt) * -0.1)) }
             100% { transform: rotateX(0) rotateY(0) }
           }
 
-          /* Blur the app underneath while loader is visible */
-          .app-root{ transition: filter .35s ease, transform .35s ease }
+          /* Blur & soften the app underneath while loading */
+          .app-root{ transition: filter .45s ease, transform .45s ease }
           body:not([data-ready="1"]) .app-root{
-            filter: blur(8px) saturate(.95) brightness(.98);
-            transform: scale(.995);
+            filter: blur(10px) saturate(.95) brightness(.98);
+            transform: scale(.992);
             pointer-events: none;
           }
 
-          /* ------- Smooth route transitions (no overlay) ------- */
+          /* ---------- Smooth route transitions (no overlay) ---------- */
           .rt { will-change: opacity, transform, filter; }
-          .rt-enter { animation: rtFadeLift .32s ease both; }
+          .rt-enter { animation: rtFadeLift .34s ease both; }
           @keyframes rtFadeLift {
             0%   { opacity:0; transform: translateY(8px) scale(.995); filter: saturate(.98); }
             100% { opacity:1; transform: translateY(0)   scale(1);    filter: none; }
@@ -135,11 +142,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             .rt-enter{ animation:none }
             .book-icon{ animation:none }
             .book-path{ animation:none; stroke-dashoffset:0 }
+            .app-loader__svg::before{ display:none }
           }
         `}</style>
       </head>
       <body>
-        {/* Loader (first load only) */}
+        {/* First-load only, super minimal + responsive */}
         <div className="app-loader" aria-hidden data-hidden>
           <div className="app-loader__box">
             <svg className="app-loader__svg" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -154,7 +162,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        {/* App content (blurred until ready) */}
+        {/* App content (blurred until ready), plus smooth transitions */}
         <div className="app-root">
           <RouteTransition>
             <NavBar />
