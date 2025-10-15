@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -118,9 +119,9 @@ export default function AccountPage() {
       });
       if (error) throw error;
       localStorage.setItem("loginEmail", loginEmail);
-      alert("Sprawdź skrzynkę — wysłaliśmy link logowania.");
+      toast.success("Sprawdź skrzynkę", { description: "Wysłaliśmy link logowania." });
     } catch (err: any) {
-      alert(err?.message || "Nie udało się wysłać linku.");
+      toast.error("Nie udało się wysłać linku", { description: err?.message || "Spróbuj ponownie." });
     } finally {
       setBusy(false);
     }
@@ -132,6 +133,7 @@ export default function AccountPage() {
     setEmail(null);
     setBusy(false);
     router.refresh();
+    toast("Wylogowano.");
   }
 
   async function redeem() {
@@ -150,25 +152,27 @@ export default function AccountPage() {
       setRedeemStatus("ok");
       setRedeemMsg(`Dodano źródło: ${dj?.source_label || "OK"}.`);
       setCode("");
+      toast.success("Kod dodany", { description: dj?.source_label || "Źródło zostało powiązane z kontem." });
     } catch (e: any) {
       setRedeemStatus("error");
       setRedeemMsg(e?.message || "Błąd.");
       setShakeKey((k) => k + 1);
+      toast.error("Błąd dodawania kodu", { description: e?.message || "Sprawdź dane i spróbuj ponownie." });
     }
   }
 
   async function subscribePush() {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      alert("Powiadomienia push nie są wspierane w tej przeglądarce.");
+      toast.error("Brak wsparcia", { description: "Powiadomienia push nie są wspierane w tej przeglądarce." });
       return;
     }
     if (Notification.permission === "denied") {
-      alert("Powiadomienia są zablokowane w ustawieniach przeglądarki.");
+      toast.error("Zablokowane", { description: "Włącz powiadomienia w ustawieniach przeglądarki." });
       return;
     }
     const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!vapid) {
-      alert("Brak klucza VAPID (NEXT_PUBLIC_VAPID_PUBLIC_KEY).");
+      toast.error("Konfiguracja", { description: "Brak klucza VAPID (NEXT_PUBLIC_VAPID_PUBLIC_KEY)." });
       return;
     }
     setBusy(true);
@@ -192,8 +196,9 @@ export default function AccountPage() {
         body: JSON.stringify(sub),
       });
       setSubscribed(true);
+      toast.success("Powiadomienia włączone");
     } catch (e: any) {
-      alert(e?.message || "Nie udało się włączyć powiadomień.");
+      toast.error("Nie udało się włączyć powiadomień", { description: e?.message || "Spróbuj ponownie." });
     } finally {
       setBusy(false);
     }
@@ -204,6 +209,7 @@ export default function AccountPage() {
     const sub = await reg?.pushManager.getSubscription();
     if (sub) await sub.unsubscribe();
     setSubscribed(false);
+    toast("Powiadomienia wyłączone");
   }
 
   return (
@@ -439,7 +445,8 @@ export default function AccountPage() {
                     onClick={async () => {
                       const r = await fetch("/api/push/test", { method: "POST" });
                       const dj = await r.json();
-                      alert(dj.ok ? "Wysłano test" : dj.error || "Błąd");
+                      if (dj.ok) toast.success("Wysłano testowe powiadomienie");
+                      else toast.error("Błąd wysyłki", { description: dj.error || "Spróbuj ponownie." });
                     }}
                     disabled={!subscribed}
                   >
@@ -464,7 +471,7 @@ export default function AccountPage() {
               </CardContent>
             </Card>
 
-            {/* Session / account box spans full width on mobile, side on desktop */}
+            {/* Session / account box */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center gap-2 justify-between">
@@ -478,7 +485,10 @@ export default function AccountPage() {
                       onClick={async () => {
                         try {
                           await navigator.clipboard.writeText(email || "");
-                        } catch {}
+                          toast.success("Skopiowano adres e-mail");
+                        } catch {
+                          toast.error("Nie udało się skopiować");
+                        }
                       }}
                       title="Kopiuj e-mail"
                       aria-label="Kopiuj e-mail"
