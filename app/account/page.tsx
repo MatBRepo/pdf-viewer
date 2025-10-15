@@ -259,7 +259,7 @@ export default function AccountPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <form onSubmit={sendMagicLink} className="grid gap-2 sm:gap-3 sm:grid-cols-[1fr_auto] max-w-xl">
+              <form onSubmit={sendMagicLink} className="grid gap-2 sm:gap-3 sm:grid-cols-[1fr_auto] max-w">
                 <Input
                   id="loginEmail"
                   type="email"
