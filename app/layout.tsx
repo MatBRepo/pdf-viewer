@@ -4,6 +4,7 @@ import MobileTabBar from "@/components/MobileTabBar";
 import RouteTransition from "@/components/RouteTransition";
 import { InstallProvider } from "@/components/install/InstallProvider";
 import InstallPushup from "@/components/install/InstallPushup";
+import ToasterClient from "@/components/ui/ToasterClient";
 
 export const metadata = {
   title: "Entriso PDF Viewer",
@@ -202,6 +203,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* First-visit push-up to trigger native install (Android/Chrome) */}
           <InstallPushup />
         </InstallProvider>
+
+         <ToasterClient />
 
         <script dangerouslySetInnerHTML={{ __html: firstLoadScript }} />
         <script dangerouslySetInnerHTML={{ __html: swRegisterScript }} />
