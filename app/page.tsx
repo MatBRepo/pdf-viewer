@@ -95,9 +95,9 @@ export default function Home() {
             utrudnione kopiowanie / drukowanie (best‑effort) oraz wygodne tryby czytania.
           </p>
 
-          <div className="mt-7 flex flex-wrap items-center gap-3">
+          <div className="mt-7 flex  items-center gap-3">
             <ShineButton asChild size="lg" className="group">
-              <Link href="/redeem" aria-label="Przejdź do wykorzystania kodu">
+              <Link href="/redeem" aria-label="Przejdź do wykorzystania kodu" className="flex items-center">
                 Wykorzystaj kod
                 <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
