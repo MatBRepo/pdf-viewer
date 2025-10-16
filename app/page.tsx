@@ -90,7 +90,7 @@ export default function Home() {
             />
           </div>
 
-          <p className="mt-4 max-w-2xl text-slate-700 dark:text-slate-300">
+          <p className="mt-4 max-w text-slate-700 dark:text-slate-300">
             Kup w WordPress/WooCommerce, zrealizuj kod w aplikacji i czytaj bezpiecznie. Brak publicznych linków,
             utrudnione kopiowanie / drukowanie (best‑effort) oraz wygodne tryby czytania.
           </p>
@@ -524,7 +524,7 @@ function ShineButton({
       {...rest}
       size={size}
       className={
-        "relative overflow-hidden rounded-xl shadow-sm transition-[transform,box-shadow] hover:shadow-lg active:translate-y-[1px] " +
+        "relative overflow-hidden rounded-md shadow-sm transition-[transform,box-shadow] hover:shadow-lg active:translate-y-[1px] " +
         className
       }
     >
