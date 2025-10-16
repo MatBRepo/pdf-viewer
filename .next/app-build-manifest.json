@@ -11,15 +11,30 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
+    "/redeem/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/redeem/page.js"
+    ],
     "/account/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/account/page.js"
     ],
-    "/auth/callback/route": [
+    "/library/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/auth/callback/route.js"
+      "static/chunks/app/library/page.js"
+    ],
+    "/api/sources/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/sources/route.js"
+    ],
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }
