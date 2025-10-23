@@ -1,51 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import {
-  Check,
-  Crown,
-  ShieldCheck,
-  FileText,
-  Globe,
-  Sparkles,
-  ChevronRight,
-} from "lucide-react";
-import CheckoutSheet from "@/components/CheckoutSheet";
+import dynamic from "next/dynamic";
+import { Check, Crown, ShieldCheck, FileText, Globe, Sparkles, ChevronRight } from "lucide-react";
+
+// ⚠️ Load the sheet only on the client to avoid prerender issues
+const CheckoutSheet = dynamic(() => import("@/components/CheckoutSheet"), {
+  ssr: false,
+  loading: () => null,
+});
+
 
 export default function SubscriptionYearlyPage() {
   const [open, setOpen] = useState(false);
-  const sp = useSearchParams();
-
-  // Open offcanvas via ?buy=1
-  useEffect(() => {
-    if (sp?.get("buy") === "1") setOpen(true);
-  }, [sp]);
 
   return (
     <main className="container mx-auto max-w-5xl px-4 py-10">
       {/* Breadcrumb */}
       <nav aria-label="breadcrumbs" className="mb-6 text-sm">
-        <ol className="flex flex-wrap items-center gap-2 text-slate-600 dark:text-slate-400">
-          <li>
-            <Link href="/" className="hover:underline">
-              Strona główna
-            </Link>
-          </li>
+        <ol className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+          <li><Link href="/" className="hover:underline">Strona główna</Link></li>
           <li className="opacity-50">/</li>
-          <li>
-            <Link href="/shop" className="hover:underline">
-              Sklep
-            </Link>
-          </li>
+          <li><Link href="/shop" className="hover:underline">Sklep</Link></li>
           <li className="opacity-50">/</li>
-          <li
-            aria-current="page"
-            className="text-slate-900 dark:text-slate-100 font-medium"
-          >
-            Subskrypcja roczna
-          </li>
+          <li aria-current="page" className="text-slate-900 dark:text-slate-100 font-medium">Subskrypcja roczna</li>
         </ol>
       </nav>
 
@@ -58,32 +37,16 @@ export default function SubscriptionYearlyPage() {
           Subskrypcja roczna
         </h1>
         <p className="mt-2 text-slate-600 dark:text-slate-400">
-          Najlepsza cena: zapłać raz na rok, a oszczędzisz względem planu
-          miesięcznego.
+          Najlepsza cena: zapłać raz na rok, a oszczędzisz względem planu miesięcznego.
         </p>
       </header>
 
       {/* Quick switch */}
-      <div
-        role="tablist"
-        aria-label="Wybór planu rozliczeń"
-        className="mb-8 inline-flex rounded-lg border border-slate-200/70 p-1 dark:border-slate-800/70"
-      >
-        <Link
-          role="tab"
-          aria-selected="false"
-          href="/shop/subscription-monthly"
-          className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-        >
+      <div className="mb-8 inline-flex rounded-lg border border-slate-200/70 p-1 dark:border-slate-800/70">
+        <Link href="/shop/subscription-monthly" className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
           Miesięczna
         </Link>
-        <Link
-          role="tab"
-          aria-selected="true"
-          aria-current="page"
-          href="/shop/subscription-yearly"
-          className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm bg-slate-900 text-white dark:bg-slate-200 dark:text-slate-900"
-        >
+        <Link href="/shop/subscription-yearly" className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm bg-slate-900 text-white dark:bg-slate-200 dark:text-slate-900">
           Roczna
         </Link>
       </div>
@@ -97,9 +60,7 @@ export default function SubscriptionYearlyPage() {
             </div>
             <div>
               <h2 className="text-2xl font-semibold">Plan Pro</h2>
-              <p className="text-slate-600 dark:text-slate-400">
-                Pełna integracja z WooCommerce
-              </p>
+              <p className="text-slate-600 dark:text-slate-400">Pełna integracja z WooCommerce</p>
             </div>
           </div>
 
@@ -129,21 +90,12 @@ export default function SubscriptionYearlyPage() {
           </div>
         </div>
 
-        <aside className="rounded-2xl border border-slate-200/70 bg-white/60 p-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/40">
+        <div className="rounded-2xl border border-slate-200/70 bg-white/60 p-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/40">
           <h3 className="mb-3 text-lg font-semibold">Dlaczego to bezpieczne?</h3>
           <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-            <li className="flex items-start gap-2">
-              <ShieldCheck className="mt-0.5 h-4 w-4 text-green-600" /> Brak
-              publicznych linków do PDF
-            </li>
-            <li className="flex items-start gap-2">
-              <FileText className="mt-0.5 h-4 w-4 text-blue-600" /> Strumieniowanie
-              z watermarkiem
-            </li>
-            <li className="flex items-start gap-2">
-              <Globe className="mt-0.5 h-4 w-4 text-slate-500" /> Krótkotrwałe
-              bilety dostępu
-            </li>
+            <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-green-600" /> Brak publicznych linków do PDF</li>
+            <li className="flex items-start gap-2"><FileText className="mt-0.5 h-4 w-4 text-blue-600" /> Strumieniowanie z watermarkiem</li>
+            <li className="flex items-start gap-2"><Globe className="mt-0.5 h-4 w-4 text-slate-500" /> Krótkotrwałe bilety dostępu</li>
           </ul>
           <a
             href="https://wordpress.org/plugins/"
@@ -153,25 +105,20 @@ export default function SubscriptionYearlyPage() {
           >
             Pobierz wtyczkę WordPress
           </a>
-        </aside>
+        </div>
       </section>
 
-      {/* Shared CheckoutSheet */}
+      {/* Shared CheckoutSheet (client-only) */}
       <CheckoutSheet
         open={open}
         onOpenChange={setOpen}
-        planId="pro_yearly"
-        planLabel="Plan Pro – roczna"
-        defaultCouponPlaceholder="np. YEAR10"
+        plan="pro_yearly"
+        priceLabel="€190 / rok"
       />
     </main>
   );
 }
 
 function Line({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2">
-      <Check className="mt-0.5 h-4 w-4 text-emerald-600" /> {children}
-    </li>
-  );
+  return <li className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 text-emerald-600" /> {children}</li>;
 }

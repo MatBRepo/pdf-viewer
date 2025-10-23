@@ -1,14 +1,8 @@
+// components/CheckoutSheet.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -19,73 +13,26 @@ export type CheckoutSheetPlan = "pro_monthly" | "pro_yearly";
 export type CheckoutSheetProps = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-
-  /** canonical prop */
-  plan?: CheckoutSheetPlan;
-  /** legacy alias (ignored if `plan` is provided) */
-  planId?: CheckoutSheetPlan;
-
-  /** Optional UI labels */
-  planLabel?: string;              // e.g., "Plan Pro – miesięczna"
-  priceLabel?: string;             // e.g., "€19 / miesiąc" or "€190 / rok"
-  defaultCouponPlaceholder?: string;
+  plan: CheckoutSheetPlan;
+  priceLabel: string;
 };
 
-export default function CheckoutSheet({
-  open,
-  onOpenChange,
-  plan,
-  planId,
-  planLabel,
-  priceLabel,
-  defaultCouponPlaceholder = "np. SAVE10",
-}: CheckoutSheetProps) {
-  // Normalize plan
-  const normalizedPlan: CheckoutSheetPlan = (plan ?? planId ?? "pro_monthly");
-
-  const isMonthly = normalizedPlan === "pro_monthly";
-  const headerPlanLabel =
-    planLabel ?? (isMonthly ? "Plan Pro – miesięczna" : "Plan Pro – roczna");
-  const headerPriceLabel =
-    priceLabel ?? (isMonthly ? "€19 / miesiąc" : "€190 / rok");
-
-  // Avoid any SSR/hydration oddities.
+export default function CheckoutSheet({ open, onOpenChange, plan, priceLabel }: CheckoutSheetProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
-  // Do not render anything unless mounted AND open.
   if (!mounted || !open) return null;
-
-  // Submit → create Checkout Session, redirect to Stripe
-  async function goToStripe() {
-    try {
-      const r = await fetch("/api/billing/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: normalizedPlan }),
-      });
-      const dj = await r.json();
-      if (dj?.url) window.location.href = dj.url;
-    } catch {
-      // Optional: toast/error handling
-    }
-  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      {/* Only render SheetContent when open to avoid stray layout */}
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-md p-0 z-[2147483647]" // absurdly high z-index
-      >
+      <SheetContent side="right" className="w-full sm:max-w-md p-0 z-[2147483647]">
         <div className="flex h-full flex-col">
           <SheetHeader className="px-6 py-4 border-b">
-            <SheetTitle>Zakup subskrypcji — {headerPlanLabel}</SheetTitle>
-            <SheetDescription>Cena: {headerPriceLabel}</SheetDescription>
+            <SheetTitle>Zakup subskrypcji — {plan === "pro_monthly" ? "Miesięczna" : "Roczna"}</SheetTitle>
+            <SheetDescription>Wypełnij dane zamówienia. Cena: {priceLabel}</SheetDescription>
           </SheetHeader>
 
           <div className="flex-1 overflow-auto px-6 py-5 space-y-6">
-            {/* Dane klienta */}
+            {/* Dane kontaktowe */}
             <section className="space-y-3">
               <h3 className="text-sm font-medium">Dane kontaktowe</h3>
               <div className="grid gap-3">
@@ -147,12 +94,12 @@ export default function CheckoutSheet({
             <section className="space-y-3">
               <h3 className="text-sm font-medium">Kod rabatowy</h3>
               <div className="flex gap-2">
-                <Input placeholder={defaultCouponPlaceholder} className="flex-1" />
+                <Input placeholder="Wpisz kod" className="flex-1" />
                 <Button type="button" variant="outline">Zastosuj</Button>
               </div>
             </section>
 
-            {/* Płatność (Stripe) – informacja */}
+            {/* Płatność (Stripe) */}
             <section className="space-y-3">
               <h3 className="text-sm font-medium">Płatność</h3>
               <div className="rounded-lg border p-4 text-sm text-slate-600 dark:text-slate-300">
@@ -163,14 +110,23 @@ export default function CheckoutSheet({
           </div>
 
           <SheetFooter className="px-6 py-4 border-t flex gap-2">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button variant="outline" className="w-full" onClick={() => onOpenChange(false)}>
               Anuluj
             </Button>
-            <Button className="w-full" onClick={goToStripe}>
+            <Button
+              className="w-full"
+              onClick={() => {
+                fetch("/api/billing/create-checkout-session", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ plan }),
+                })
+                  .then((r) => r.json())
+                  .then((d) => {
+                    if (d?.url) window.location.href = d.url;
+                  });
+              }}
+            >
               Przejdź do płatności
             </Button>
           </SheetFooter>

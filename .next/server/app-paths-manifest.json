@@ -1,7 +1,8 @@
 {
-  "/subscription/page": "app/subscription/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/shop/subscription-monthly/page": "app/shop/subscription-monthly/page.js",
   "/page": "app/page.js",
   "/shop/subscription-yearly/page": "app/shop/subscription-yearly/page.js",
-  "/shop/subscription-monthly/page": "app/shop/subscription-monthly/page.js",
+  "/subscription/page": "app/subscription/page.js",
   "/account/page": "app/account/page.js"
 }
